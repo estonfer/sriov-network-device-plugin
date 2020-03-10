@@ -279,7 +279,7 @@ func setSharedVfVlan(ifName string, vfIdx int, vlan int) error {
 	}
 
 	if len(infos) != maxSharedVf {
-		return fmt.Errorf("Given PF - %q is not having shared VF", ifName)
+		return fmt.Errorf("Given PF - %q is not having shared VF %v", ifName, infos)
 	}
 
 	for _, dir := range infos {
@@ -382,8 +382,18 @@ func setupVF(conf *NetConf, ifName string, podifName string, cid string, netns n
 				return fmt.Errorf("failed to set shared vf %d vlan: %v", vfIdx, err)
 			}
 		}
+	} else {
+		iflink, _ := netlink.LinkByName(ifName)
+		if err := netlink.LinkSetVfVlan(iflink, vfIdx, 0); err != nil {
+			return fmt.Errorf("failed to set vf %d vlan: %v for shared ifname %q", vfIdx, err, ifName)
+		}
 	}
-
+	//else {
+	//	devName := fmt.Sprintf("dev%d", vfIdx)
+	//	if err = resetVfVlan(ifName, devName); err != nil {
+	//		return fmt.Errorf("failed to reset vlan: %v", err)
+	//	}
+	//}
 	if conf.DPDKMode != false {
 		conf.DPDKConf.PCIaddr = pciAddr
 		conf.DPDKConf.Ifname = podifName
